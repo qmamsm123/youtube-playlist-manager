@@ -41,6 +41,9 @@ export const getMyPlaylists = async (args: PlaylistsParams) => {
       const data = (await response.json()) as PlaylistsResponse;
       return data;
     } else {
+      if (response.status === 401) {
+        sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+      }
       throw new Error("API 응답이 올바르지 않습니다.");
     }
   } else {

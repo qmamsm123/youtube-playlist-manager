@@ -72,7 +72,7 @@ export interface PlaylistsParams {
 
 type ThumbnailsType = "default" | "medium" | "high" | "standard";
 
-type PlaylistResource = Readonly<{
+export type PlaylistResource = Readonly<{
   kind: "youtube#playlist";
   etag: string;
   id: string;
