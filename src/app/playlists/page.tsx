@@ -1,35 +1,42 @@
 "use client";
 
-import { PlaylistResource, PlaylistsParams } from "@/types/api/playlists";
-import { getMyPlaylists } from "@/utils/api";
-import { Card, CardFooter, Image } from "@nextui-org/react";
-import { useEffect, useState } from "react";
+import { PlaylistsParams, PlaylistsResponse } from "@/types/api/playlists";
+import { axiosInstance } from "@/utils/api";
+import { Card, CardFooter, Image, Spinner } from "@nextui-org/react";
+import { useQuery } from "@tanstack/react-query";
 
 export default function HomePage() {
-  const [items, setItems] = useState<PlaylistResource[]>([]);
+  const { data, isLoading } = useQuery({
+    queryKey: ["playlists"],
+    queryFn: async () => {
+      const args: PlaylistsParams = {
+        part: [
+          "contentDetails",
+          "id",
+          "localizations",
+          "player",
+          "snippet",
+          "status",
+        ],
+        mine: true,
+        maxResults: 50,
+      };
+      const response = await axiosInstance.get<PlaylistsResponse>(
+        "/playlists",
+        {
+          params: args,
+        },
+      );
+      return response.data;
+    },
+  });
 
-  useEffect(() => {
-    const args: PlaylistsParams = {
-      part: [
-        "contentDetails",
-        "id",
-        "localizations",
-        "player",
-        "snippet",
-        "status",
-      ],
-      mine: true,
-      maxResults: 50,
-    };
-    getMyPlaylists(args).then((response) => {
-      setItems(response.items);
-    });
-  }, []);
+  console.log(data);
 
   return (
     <div className="w-full min-h-full flex flex-col gap-12">
       <div className="w-full grid gap-8 p-24 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-        {items.map((item) => (
+        {data?.items.map((item) => (
           <Card isPressable isFooterBlurred key={item.id}>
             <Image
               removeWrapper
@@ -49,6 +56,7 @@ export default function HomePage() {
             </CardFooter>
           </Card>
         ))}
+        {isLoading && <Spinner />}
       </div>
     </div>
   );

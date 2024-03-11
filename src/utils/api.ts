@@ -1,52 +1,33 @@
-import { PlaylistsParams, PlaylistsResponse } from "@/types/api/playlists";
+import axios from "axios";
 import { ACCESS_TOKEN_KEY } from "constants/common";
-import { PLAYLISTS } from "constants/endpoints";
+import qs from "qs";
 
-const withParams = (url: string, args: object) => {
-  const urlObject = new URL(url);
-  Object.entries(args).forEach(([key, value]) => {
-    if (typeof value === "object" && value.join) {
-      (value as any[]).forEach((item) =>
-        urlObject.searchParams.append(key, item),
-      );
-    } else {
-      urlObject.searchParams.append(key, `${value}`);
-    }
-  });
-  return urlObject.toString();
+export const axiosInstance = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_GOOGLE_API_URL,
+  params: {
+    key: process.env.NEXT_PUBLIC_GOOGLE_API_CLIENT_ID,
+  },
+});
+
+axiosInstance.defaults.paramsSerializer = (params) => {
+  return qs.stringify(params, { arrayFormat: "repeat" });
 };
 
-const withAPIKey = (url: string) => {
-  const urlObject = new URL(url);
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_API_CLIENT_ID;
-  if (apiKey) {
-    urlObject.searchParams.append("key", apiKey);
-    return urlObject.toString();
-  } else {
-    throw new Error("환경변수에서 API KEY를 가져오지 못 했습니다.");
-  }
-};
-
-export const getMyPlaylists = async (args: PlaylistsParams) => {
+axiosInstance.interceptors.request.use((config) => {
   const accessToken = sessionStorage.getItem(ACCESS_TOKEN_KEY);
   if (accessToken) {
-    const response = await fetch(withAPIKey(withParams(PLAYLISTS, args)), {
-      method: "get",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        Accept: "application/json",
-      },
-    });
-    if (response.ok) {
-      const data = (await response.json()) as PlaylistsResponse;
-      return data;
-    } else {
-      if (response.status === 401) {
-        sessionStorage.removeItem(ACCESS_TOKEN_KEY);
-      }
-      throw new Error("API 응답이 올바르지 않습니다.");
-    }
-  } else {
-    throw new Error("세션 스토리지에서 엑세스 토큰을 가져오지 못 했습니다.");
+    config.headers.Authorization = `Bearer ${accessToken}`;
   }
-};
+  return config;
+});
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  },
+);

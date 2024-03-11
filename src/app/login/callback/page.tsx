@@ -16,7 +16,7 @@ export default function LoginCallbackPage() {
     const accessToken = parsedHash.get(ACCESS_TOKEN_KEY);
     if (accessToken) {
       setAccessToken(accessToken);
-      router.replace("/home");
+      router.replace("/playlists");
     }
   }, [router, setAccessToken]);
 
